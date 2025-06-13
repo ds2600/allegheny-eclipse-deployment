@@ -1,9 +1,11 @@
 #!/bin/bash
 #
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 cd /var/www/allegheny-eclipse/
 
-LOG_FILE="script.log"
+LOG_FILE="$SCRIPT_DIR/script.log"
 LAST_VERSION_FILE=".last_version"
 VERSION="$1"
 
