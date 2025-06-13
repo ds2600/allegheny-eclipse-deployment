@@ -3,16 +3,26 @@
 
 cd /var/www/allegheny-eclipse/
 
+LOG_FILE="script.log"
 LAST_VERSION_FILE=".last_version"
 VERSION="$1"
+
+log() {
+    echo [$( date '+%Y-%m-%d %H:%M:%S' )] "$1" >> "$LOG_FILE"
+}
+
+log "----- Deployment started -----"
+
 
 VERSIONS=($(git tag | sort -V))
 
 if [ -z "$VERSION" ]; then
     if [ -f "$LAST_VERSION_FILE" ]; then
         LAST_VERSION=$(cat "$LAST_VERSION_FILE")
+        log "Last deployed version: $LAST_VERSION"
     else
         LAST_VERSION=""
+        log "No last deployed version found."
     fi
 
     NEXT_VERSION=""
@@ -25,6 +35,7 @@ if [ -z "$VERSION" ]; then
     done
 
     if [ -z "$NEXT_VERSION" ]; then
+        log "No new version available to deploy."
         echo "No new version to deploy."
         exit 0
     fi
@@ -32,13 +43,22 @@ if [ -z "$VERSION" ]; then
     VERSION="$NEXT_VERSION"
 fi
 
+log "Deploying version: $VERSION"
 echo "Deploying version: $VERSION"
 
 git fetch --tags
-git checkout "$VERSION" || exit 1
+git checkout "$VERSION" || { log "Failed to checkout version $VERSION"; exit 1; }
 composer install --no-dev --optimize-autoloader
-echo "$VERSION" > "$LAST_VERSION_FILE"
-echo "Deployment complete for version: $VERSION"
+log "Composer install completed"
 
-echo "Updating WaybackMachine..."
+echo "$VERSION" > "$LAST_VERSION_FILE"
+log "Updated last deployed version to: $VERSION"
+
+echo "Submitting to Waybck Machine"
 curl -X POST "https://web.archive.org/save/https://alleghenyeclipse.com" -H "User-Agent: Allegheny Eclipse Deployment Script"
+
+log "Deployment completed successfully"
+echo "Deployment completed successfully"
+
+
+
